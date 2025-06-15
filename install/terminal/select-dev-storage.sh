@@ -15,12 +15,26 @@ else
     echo "Bases sélectionnées par l'utilisateur : $dbs" >> "$LOGFILE"
 fi
 
+
+
+
+# Fonction utilitaire : supprime un conteneur s'il existe déjà
+remove_if_exists() {
+    container_name=$1
+    if sudo docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        echo "⚠️  Un conteneur nommé \"$container_name\" existe déjà. Suppression..." >> "$LOGFILE"
+        sudo docker rm -f "$container_name" >> "$LOGFILE" 2>&1
+        echo "🗑️  Conteneur \"$container_name\" supprimé." >> "$LOGFILE"
+    fi
+}
+
 # Lancement des bases
 if [[ -n "$dbs" ]]; then
     for db in $dbs; do
         echo "Lancement du conteneur pour $db..." >> "$LOGFILE"
         case $db in
         MySQL)
+            remove_if_exists mysql8
             sudo docker run -d --restart unless-stopped \
                 -p "127.0.0.1:3306:3306" \
                 --name=mysql8 \
@@ -30,6 +44,7 @@ if [[ -n "$dbs" ]]; then
             echo "✅ MySQL lancé." >> "$LOGFILE"
             ;;
         Redis)
+            remove_if_exists redis
             sudo docker run -d --restart unless-stopped \
                 -p "127.0.0.1:6379:6379" \
                 --name=redis \
@@ -37,6 +52,7 @@ if [[ -n "$dbs" ]]; then
             echo "✅ Redis lancé." >> "$LOGFILE"
             ;;
         PostgreSQL)
+            remove_if_exists postgres16
             sudo docker run -d --restart unless-stopped \
                 -p "127.0.0.1:5432:5432" \
                 --name=postgres16 \
